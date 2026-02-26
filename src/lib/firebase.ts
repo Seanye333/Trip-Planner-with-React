@@ -3,7 +3,6 @@ import {
   getFirestore,
   collection,
   doc,
-  addDoc,
   updateDoc,
   deleteDoc,
   getDocs,
@@ -14,7 +13,14 @@ import {
   setDoc,
   Timestamp,
 } from 'firebase/firestore'
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import type { Trip, ItineraryDay, Expense, PackingItem, TripBudget } from './types'
 
@@ -33,6 +39,8 @@ export const auth = getAuth(app)
 
 // Auth helpers
 export const signInAnon = () => signInAnonymously(auth)
+export const signInWithGoogle = () => signInWithPopup(auth, new GoogleAuthProvider())
+export const signOutUser = () => signOut(auth)
 export const onAuth = (cb: (user: User | null) => void) => onAuthStateChanged(auth, cb)
 
 // Trips
@@ -42,9 +50,8 @@ export async function fetchTrips(userId: string): Promise<Trip[]> {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Trip))
 }
 
-export async function createTrip(trip: Omit<Trip, 'id'>): Promise<string> {
-  const ref = await addDoc(collection(db, 'trips'), trip)
-  return ref.id
+export async function createTrip(trip: Trip): Promise<void> {
+  await setDoc(doc(db, 'trips', trip.id), trip)
 }
 
 export async function updateTrip(id: string, data: Partial<Trip>): Promise<void> {
@@ -62,13 +69,8 @@ export async function fetchItinerary(tripId: string): Promise<ItineraryDay[]> {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as ItineraryDay))
 }
 
-export async function saveItineraryDay(day: Omit<ItineraryDay, 'id'> & { id?: string }): Promise<string> {
-  if (day.id) {
-    await setDoc(doc(db, 'itinerary', day.id), day)
-    return day.id
-  }
-  const ref = await addDoc(collection(db, 'itinerary'), day)
-  return ref.id
+export async function saveItineraryDay(day: ItineraryDay): Promise<void> {
+  await setDoc(doc(db, 'itinerary', day.id), day)
 }
 
 export async function deleteItineraryDay(id: string): Promise<void> {
@@ -82,9 +84,8 @@ export async function fetchExpenses(tripId: string): Promise<Expense[]> {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense))
 }
 
-export async function addExpense(expense: Omit<Expense, 'id'>): Promise<string> {
-  const ref = await addDoc(collection(db, 'expenses'), expense)
-  return ref.id
+export async function addExpense(expense: Expense): Promise<void> {
+  await setDoc(doc(db, 'expenses', expense.id), expense)
 }
 
 export async function deleteExpense(id: string): Promise<void> {
@@ -107,9 +108,8 @@ export async function fetchPackingItems(tripId: string): Promise<PackingItem[]> 
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as PackingItem))
 }
 
-export async function addPackingItem(item: Omit<PackingItem, 'id'>): Promise<string> {
-  const ref = await addDoc(collection(db, 'packing'), item)
-  return ref.id
+export async function addPackingItem(item: PackingItem): Promise<void> {
+  await setDoc(doc(db, 'packing', item.id), item)
 }
 
 export async function updatePackingItem(id: string, data: Partial<PackingItem>): Promise<void> {
@@ -118,6 +118,14 @@ export async function updatePackingItem(id: string, data: Partial<PackingItem>):
 
 export async function deletePackingItem(id: string): Promise<void> {
   await deleteDoc(doc(db, 'packing', id))
+}
+
+// Upload all local trips to Firebase after Google sign-in
+export async function syncLocalTripsToFirebase(trips: Trip[], userId: string): Promise<void> {
+  const writes = trips
+    .filter((t) => t.userId === 'local' || t.userId === userId)
+    .map((t) => setDoc(doc(db, 'trips', t.id), { ...t, userId }))
+  await Promise.all(writes)
 }
 
 export { Timestamp }

@@ -4,6 +4,8 @@ import type { Trip, ItineraryDay, Expense, PackingItem, TripBudget } from './typ
 
 interface AppState {
   userId: string | null
+  userEmail: string | null
+  userPhoto: string | null
   trips: Trip[]
   itinerary: ItineraryDay[]
   expenses: Expense[]
@@ -11,6 +13,7 @@ interface AppState {
   budgets: Record<string, TripBudget>
   // Setters
   setUserId: (id: string | null) => void
+  setUserProfile: (email: string | null, photo: string | null) => void
   setTrips: (trips: Trip[]) => void
   addTrip: (trip: Trip) => void
   updateTrip: (id: string, data: Partial<Trip>) => void
@@ -32,6 +35,8 @@ export const useStore = create<AppState>()(
   persist(
     (set) => ({
       userId: null,
+      userEmail: null,
+      userPhoto: null,
       trips: [],
       itinerary: [],
       expenses: [],
@@ -39,6 +44,7 @@ export const useStore = create<AppState>()(
       budgets: {},
 
       setUserId: (id) => set({ userId: id }),
+      setUserProfile: (email, photo) => set({ userEmail: email, userPhoto: photo }),
       setTrips: (trips) => set({ trips }),
       addTrip: (trip) => set((s) => ({ trips: [trip, ...s.trips] })),
       updateTrip: (id, data) =>
@@ -71,6 +77,8 @@ export const useStore = create<AppState>()(
       // Persist everything to localStorage so the app works without Firebase
       partialize: (s) => ({
         userId: s.userId,
+        userEmail: s.userEmail,
+        userPhoto: s.userPhoto,
         trips: s.trips,
         itinerary: s.itinerary,
         expenses: s.expenses,

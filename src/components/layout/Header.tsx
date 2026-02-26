@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, Plane } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { UserMenu } from './UserMenu'
 
 interface HeaderProps {
   title?: string
@@ -29,6 +30,7 @@ export function Header({ title, showBack }: HeaderProps) {
         <h1 className="font-semibold text-slate-100 text-base flex-1">
           {title || 'TripPlanner'}
         </h1>
+        <UserMenu />
       </div>
     </header>
   )
