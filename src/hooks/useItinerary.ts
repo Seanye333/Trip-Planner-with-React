@@ -9,26 +9,30 @@ export function useItinerary(tripId: string) {
   const days = itinerary.filter((d) => d.tripId === tripId)
 
   const loadItinerary = useCallback(async () => {
+    // Local data already restored from localStorage — only merge Firebase data
     try {
       const data = await fb.fetchItinerary(tripId)
-      setItinerary([...useStore.getState().itinerary.filter((d) => d.tripId !== tripId), ...data])
+      if (data.length > 0) {
+        setItinerary([...useStore.getState().itinerary.filter((d) => d.tripId !== tripId), ...data])
+      }
     } catch (e) {
-      console.error('loadItinerary:', e)
+      console.warn('Firebase loadItinerary failed, using local data:', e)
     }
   }, [tripId, setItinerary])
 
   const addActivity = useCallback(
     async (date: string, activity: Omit<Activity, 'id'>) => {
-      const existingDay = days.find((d) => d.date === date)
       const newActivity: Activity = { ...activity, id: generateId() }
+      const existingDay = days.find((d) => d.date === date)
+
       if (existingDay) {
         const updated = { ...existingDay, activities: [...existingDay.activities, newActivity] }
-        await fb.saveItineraryDay(updated)
         upsertDay(updated)
+        fb.saveItineraryDay(updated).catch((e) => console.warn('Firebase sync failed:', e))
       } else {
-        const newDay: Omit<ItineraryDay, 'id'> = { tripId, date, activities: [newActivity] }
-        const id = await fb.saveItineraryDay(newDay)
-        upsertDay({ id, ...newDay })
+        const newDay: ItineraryDay = { id: generateId(), tripId, date, activities: [newActivity] }
+        upsertDay(newDay)
+        fb.saveItineraryDay(newDay).catch((e) => console.warn('Firebase sync failed:', e))
       }
     },
     [days, tripId, upsertDay]
@@ -42,8 +46,8 @@ export function useItinerary(tripId: string) {
         ...day,
         activities: day.activities.map((a) => (a.id === activityId ? { ...a, ...data } : a)),
       }
-      await fb.saveItineraryDay(updated)
       upsertDay(updated)
+      fb.saveItineraryDay(updated).catch((e) => console.warn('Firebase sync failed:', e))
     },
     [days, upsertDay]
   )
@@ -54,12 +58,12 @@ export function useItinerary(tripId: string) {
       if (!day) return
       const activities = day.activities.filter((a) => a.id !== activityId)
       if (activities.length === 0) {
-        await fb.deleteItineraryDay(dayId)
         removeDay(dayId)
+        fb.deleteItineraryDay(dayId).catch((e) => console.warn('Firebase sync failed:', e))
       } else {
         const updated = { ...day, activities }
-        await fb.saveItineraryDay(updated)
         upsertDay(updated)
+        fb.saveItineraryDay(updated).catch((e) => console.warn('Firebase sync failed:', e))
       }
     },
     [days, upsertDay, removeDay]

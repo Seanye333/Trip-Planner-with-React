@@ -2,42 +2,47 @@ import { useCallback } from 'react'
 import { useStore } from '@/lib/store'
 import * as fb from '@/lib/firebase'
 import type { PackingItem } from '@/lib/types'
+import { generateId } from '@/lib/utils'
 
 export function usePacking(tripId: string) {
   const { packingItems, addPackingItem, updatePackingItem, removePackingItem, setPackingItems } = useStore()
   const items = packingItems.filter((p) => p.tripId === tripId)
 
   const loadPacking = useCallback(async () => {
+    // Local data already restored — only merge Firebase data
     try {
       const data = await fb.fetchPackingItems(tripId)
-      const others = useStore.getState().packingItems.filter((p) => p.tripId !== tripId)
-      setPackingItems([...others, ...data])
+      if (data.length > 0) {
+        const others = useStore.getState().packingItems.filter((p) => p.tripId !== tripId)
+        setPackingItems([...others, ...data])
+      }
     } catch (e) {
-      console.error('loadPacking:', e)
+      console.warn('Firebase loadPacking failed, using local data:', e)
     }
   }, [tripId, setPackingItems])
 
   const addItem = useCallback(
     async (category: string, name: string) => {
-      const item: Omit<PackingItem, 'id'> = { tripId, category, name, checked: false }
-      const id = await fb.addPackingItem(item)
-      addPackingItem({ id, ...item })
+      const id = generateId()
+      const item: PackingItem = { id, tripId, category, name, checked: false }
+      addPackingItem(item)
+      fb.addPackingItem(item).catch((e) => console.warn('Firebase sync failed:', e))
     },
     [tripId, addPackingItem]
   )
 
   const toggleItem = useCallback(
     async (id: string, checked: boolean) => {
-      await fb.updatePackingItem(id, { checked })
       updatePackingItem(id, { checked })
+      fb.updatePackingItem(id, { checked }).catch((e) => console.warn('Firebase sync failed:', e))
     },
     [updatePackingItem]
   )
 
   const deleteItem = useCallback(
     async (id: string) => {
-      await fb.deletePackingItem(id)
       removePackingItem(id)
+      fb.deletePackingItem(id).catch((e) => console.warn('Firebase sync failed:', e))
     },
     [removePackingItem]
   )

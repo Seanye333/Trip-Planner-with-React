@@ -10,6 +10,8 @@ import { ItineraryPage } from '@/pages/ItineraryPage'
 import { MapPage } from '@/pages/MapPage'
 import { BudgetPage } from '@/pages/BudgetPage'
 import { PackingPage } from '@/pages/PackingPage'
+import { AIChatPage } from '@/pages/AIChatPage'
+import { RedNotePage } from '@/pages/RedNotePage'
 
 function TripLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { id } = useParams<{ id: string }>()
@@ -79,6 +81,22 @@ function AppRoutes() {
           </TripLayout>
         }
       />
+      <Route
+        path="/trip/:id/ai"
+        element={
+          <TripLayout title="AI Assistant">
+            <AIChatPage />
+          </TripLayout>
+        }
+      />
+      <Route
+        path="/trip/:id/rednote"
+        element={
+          <TripLayout title="RedNote 小红书">
+            <RedNotePage />
+          </TripLayout>
+        }
+      />
     </Routes>
   )
 }
@@ -87,14 +105,19 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUserId = useStore((s) => s.setUserId)
 
   useEffect(() => {
-    const unsub = onAuth((user) => {
-      if (user) {
-        setUserId(user.uid)
-      } else {
-        signInAnon().catch(console.error)
-      }
-    })
-    return () => unsub()
+    let unsub: (() => void) | undefined
+    try {
+      unsub = onAuth((user) => {
+        if (user) {
+          setUserId(user.uid)
+        } else {
+          signInAnon().catch((e) => console.warn('Anonymous sign-in failed:', e))
+        }
+      })
+    } catch (e) {
+      console.warn('Firebase auth unavailable, running in local mode:', e)
+    }
+    return () => unsub?.()
   }, [setUserId])
 
   return <>{children}</>

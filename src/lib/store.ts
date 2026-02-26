@@ -66,6 +66,17 @@ export const useStore = create<AppState>()(
 
       setBudget: (tripId, budget) => set((s) => ({ budgets: { ...s.budgets, [tripId]: budget } })),
     }),
-    { name: 'tripplanner-store', partialize: (s) => ({ userId: s.userId }) }
+    {
+      name: 'tripplanner-store',
+      // Persist everything to localStorage so the app works without Firebase
+      partialize: (s) => ({
+        userId: s.userId,
+        trips: s.trips,
+        itinerary: s.itinerary,
+        expenses: s.expenses,
+        packingItems: s.packingItems,
+        budgets: s.budgets,
+      }),
+    }
   )
 )
