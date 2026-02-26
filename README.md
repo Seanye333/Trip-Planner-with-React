@@ -71,4 +71,30 @@ export default defineConfig([
   },
 ])
 ```
-# Trip-Planner-with-React
+TripPlanner PWA — Complete
+npm run dev to start, npm run build to ship.
+
+Project structure built in src/
+Layer	Files
+Types	src/lib/types.ts
+Firebase	src/lib/firebase.ts
+State	src/lib/store.ts (Zustand + localStorage)
+Hooks	src/hooks/useTrips.ts, useBudget.ts, useItinerary.ts, usePacking.ts
+Pages	Home, TripDetail, Itinerary, Map, Budget, Packing
+UI	shadcn/ui-style Button, Card, Dialog, Input, Select, Badge
+Features
+My Trips dashboard with trip cards, create/delete
+Itinerary builder — day-by-day collapsible view with activities (time, category, location, notes)
+Leaflet map — OpenStreetMap tiles, no API key needed; pins activities that have lat/lng
+Budget tracker — set total budget + currency, add expenses by category, visual progress bar
+Packing list — grouped by category, check-off items, progress bar
+ChatGPT button — copies a pre-filled trip prompt to clipboard + opens chatgpt.com
+RedNote button — deep-links to 小红书 search for the trip destination
+PWA — installable, service worker, offline support, dist/sw.js generated
+Before running — add Firebase config to .env:
+
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+...
+See .env.example for all keys. The app uses anonymous Firebase Auth automatically.
